@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unit Test Bot", "Unit Test Bot\Unit Test Bot.csproj", "{5186CCE3-71A3-4937-8A7B-C98231D36DBD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5186CCE3-71A3-4937-8A7B-C98231D36DBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5186CCE3-71A3-4937-8A7B-C98231D36DBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5186CCE3-71A3-4937-8A7B-C98231D36DBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5186CCE3-71A3-4937-8A7B-C98231D36DBD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
