@@ -124,6 +124,7 @@ namespace cAlgo.Robots
             {
 
                 // Print("Its 12PM");
+                // Print("Its 12PM");
             }
             if (Server.Time.Hour == 15)
             {
