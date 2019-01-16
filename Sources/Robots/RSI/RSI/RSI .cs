@@ -57,7 +57,7 @@ using System.Collections.Generic;
 namespace cAlgo.Robots
 {
     [Robot(TimeZone = TimeZones.UTC, AccessRights = AccessRights.None)]
-    public class RSI2 : Robot
+    public class RSI : Robot
     {
         [Parameter(DefaultValue = 30)]
         public double TP { get; set; }

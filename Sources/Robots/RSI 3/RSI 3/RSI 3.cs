@@ -14,12 +14,7 @@ using System.Collections.Generic;
                             //////////////////////////LAST DID////////////////////////////
 
 
-* Trying to count the $ loss for a round to change the bot goal if volume gets to high, so the bot profit 
-  goal becomes a percentage of this los instead of a fixed TP -- OK
-  Created: double roundLosses, used in OnPositionsClosed
-  *Now we can quantify the money loss during a round for each step. 
-    Is left to figure out smth to change the money management when volume gets too high
-        
+Testing that HandleWeekResults method
                             //////////////////////////TO DO///////////////////////////
 *Make the trailing working
 *Have to make the trailing one per position because doing it onTick creates to many logs, and debugging is a pain in the a** --check again
@@ -57,7 +52,7 @@ using System.Collections.Generic;
 namespace cAlgo.Robots
 {
     [Robot(TimeZone = TimeZones.UTC, AccessRights = AccessRights.None)]
-    public class RSI2 : Robot
+    public class RSI3 : Robot
     {
         [Parameter(DefaultValue = 30)]
         public double TP { get; set; }
@@ -89,6 +84,9 @@ namespace cAlgo.Robots
         [Parameter(DefaultValue = 30)]
         public int limitOversell { get; set; }
 
+        [Parameter(DefaultValue = 30)]
+        public int DollarTarget { get; set; }
+
 
         //private int index;
         //private double open, high, low, close;
@@ -109,14 +107,15 @@ namespace cAlgo.Robots
         private List<int> phase1 = new List<int>();
         private List<int> phase2 = new List<int>();
 
+        private double oldBalance, newBalance = 0.0;
+        private double Vault = 0.0;
 
         protected override void OnStart()
         {
-            //foreach (int i in array)
-            // {
+            Vault = Account.Balance;
+            newBalance = Account.Balance;
+            oldBalance = newBalance;
 
-
-            // }
             currentVolume = InitialVolume;
             Positions.Closed += OnPositionsClosed;
             //Timer.Start(60);
@@ -125,8 +124,41 @@ namespace cAlgo.Robots
             rsi = Indicators.RelativeStrengthIndex(MarketSeries.Close, 14);
         }
 
+        protected void HandleWeekResults()
+        {
+            //Print("The server hour is: {0}", Server.Time.Hour);
+            //if (Server.Time.DayOfWeek.Equals(DayOfWeek.Monday) && Server.Time.Hour == 0 && Server.Time.Minute == 0)
+            if (Server.Time.DayOfWeek.Equals(DayOfWeek.Monday) && Server.Time.Hour == 0 && Server.Time.Minute == 0)
+            {
+                //Vault = Account.Equity;
+                if (Vault - Account.Equity > 10)
+                {
+                    Print("The server time is: " + Server.Time.DayOfWeek + " Vault = " + Vault);
+                    foreach (var p in Positions)
+                    {
+                        ClosePosition(p);
+                    }
+                    currentVolume = InitialVolume;
+                    counterLoss = 0;
+
+                }
+                else
+                {
+                    foreach (var p in Positions)
+                    {
+                        ClosePosition(p);
+                    }
+                    Print("Double position ");
+                    currentVolume *= 2;
+                    counterLoss++;
+                    Vault = Account.Equity;
+
+                }
+            }
+        }
         protected override void OnBar()
         {
+            HandleWeekResults();
 
             if (rsi.Result.LastValue >= limitOverbuy)
             {
@@ -140,10 +172,9 @@ namespace cAlgo.Robots
                 overbuy = false;
                 if (Server.Time.Hour >= 6 && Server.Time.Hour <= 17)
                 {
-                    takeHedgePositionsWithConditions("<=", 0);
+                    OpenPosition(TradeType.Sell);
+                    //takeHedgePositionsWithConditions("<=", 0);
                 }
-
-
             }
             if (rsi.Result.LastValue > NeutralInferior && oversell == true)
             {
@@ -151,43 +182,94 @@ namespace cAlgo.Robots
                 oversell = false;
                 if (Server.Time.Hour >= 6 && Server.Time.Hour <= 17)
                 {
-                    takeHedgePositionsWithConditions("<=", 0);
+                    OpenPosition(TradeType.Buy);
+                    //takeHedgePositionsWithConditions("<=", 0);
                 }
-
-
             }
             if (rsi.Result.LastValue < limitOversell)
             {
                 //Print(" RSI touched 30");
                 oversell = true;
-
             }
         }
 
-        protected override void OnTick()
+        protected void OpenPosition(TradeType tradeType)
         {
 
+            int counterPosition = 0;
+            foreach (var position in Positions)
+            {
+                counterPosition++;
+            }
+
+            if (counterPosition <= 0)
+            {
+                openBuy(tradeType, Symbol, currentVolume, "Label", SL, TP);
+            }
+
         }
+        protected override void OnTick()
+        {
+            ////////////////////Close all positions if RSI touches the opposite extremum////////////////////////////
+            foreach (var p in Positions)
+            {
+                if (p.TradeType == TradeType.Buy)
+                {
+                    if (rsi.Result.LastValue <= limitOversell + 5)
+                    {
+                        ClosePosition(p);
+                    }
+                }
+                //
+                if (p.TradeType == TradeType.Sell)
+                {
+                    if (rsi.Result.LastValue >= limitOverbuy - 5)
+                    {
+                        ClosePosition(p);
+                    }
+                }
+            }
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////
+        }
+        /*foreach (var p in Positions)
+            {
+                newBalance = Account.Equity;
+                if (p.Pips > 0)
+                {
+                    if (newBalance > oldBalance + DollarTarget)
+                    {
+
+                        //put all counters to 0 and volume to initial 
+                        currentVolume = InitialVolume;
+                        oldBalance = newBalance;
+                        ClosePosition(p);
+                        counterLoss = 0;
+                    }
+
+
+                }
+            }*/
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         private void OnPositionsClosed(PositionClosedEventArgs args)
         {
 
+
+            // Print("newBalance = " + newBalance + " - oldBalance = " + oldBalance);
+
             var position = args.Position;
 
+            Vault += position.NetProfit;
             //IF a win position triggered with TP THEN reinitialize the volume and count the gain
-            if (position.Pips >= TP - 20 && position.Pips <= TP + 20)
+            if (position.Pips >= 0)
             {
-                //put all counters to 0 and volume to initial 
-                currentVolume = InitialVolume;
 
-
-                //counterLoss = 0;
             }
 
             else if (position.Pips >= 0)
             {
-
-
             }
 
             //IF position lost THEN increment the right counter to update thr volume
@@ -198,7 +280,7 @@ namespace cAlgo.Robots
 
                 if (counterLoss % increaseAfter == 0)
                 {
-                    currentVolume *= 2;
+                    //  currentVolume *= 2;
                 }
             }
 

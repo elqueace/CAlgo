@@ -22,13 +22,11 @@ namespace cAlgo
         [Parameter(DefaultValue = 1)]
         public int increaseAfter { get; set; }
 
-
         [Parameter("IF profit > ", DefaultValue = 80)]
         public int trailTrigger { get; set; }
 
         [Parameter("THEN trail at ", DefaultValue = 100)]
         public int TrailingStop { get; set; }
-
 
         [Parameter(DefaultValue = 70)]
         public int limitOverbuy { get; set; }
@@ -43,7 +41,6 @@ namespace cAlgo
         public string phase, smaValue = "";
         public int increaseAfterDefault;
 
-
         private bool CanTrade = false;
 
         //private RelativeStrengthIndex rsiMin10;
@@ -56,7 +53,7 @@ namespace cAlgo
             phase = "Cross";
             Positions.Closed += OnPositionsClosed;
             rsi = Indicators.RelativeStrengthIndex(MarketData.GetSeries(TimeFrame.Hour).Close, 14);
-            sma = Indicators.SimpleMovingAverage(MarketData.GetSeries(TimeFrame.Minute).Close, 3000);
+            sma = Indicators.SimpleMovingAverage(MarketData.GetSeries(TimeFrame.Hour).Close, 1000);
             currentVolume = InitialVolume;
             balance = Account.Balance;
             Timer.Start(1);
@@ -78,7 +75,6 @@ namespace cAlgo
         protected override void OnTick()
         {
             trailAllPositions();
-
         }
         //
         private bool CheckNewDay()
@@ -96,8 +92,6 @@ namespace cAlgo
         }
         private void OnPositionsClosed(PositionClosedEventArgs args)
         {
-
-
             //Print("Closed");
             var position = args.Position;
 
@@ -126,29 +120,48 @@ namespace cAlgo
             {
                 counterLoss++;
 
-
                 /// if (counterLoss % 2 == 0)
                 ////{
                 // phase = "Pause";
                 //Print("Pause 3 Days");
                 //Timer.Start(259200);
                 //}
-                if (counterLoss % increaseAfter == 0)
+                if (counterLoss <= -3000)
                 {
-                    //updateVolumePositionsManual();
-                    currentVolume *= 2;
+                    if (counterLoss % increaseAfter == 0)
+                    {
+                        //updateVolumePositionsManual();
+                        currentVolume *= 2;
 
+                        //Print("counterloss = " + counterLoss);
+                    }
+                }
+                else if (counterLoss >= 1 && counterLoss <= 6)
+                {
+                    if (counterLoss % 2 == 0)
+                    {
+                        //updateVolumePositionsManual();
+                        currentVolume *= 2;
 
-                    //Print("counterloss = " + counterLoss);
+                        //Print("counterloss = " + counterLoss);
+                    }
+                }
+                else if (counterLoss >= 7)
+                {
+                    if (counterLoss % 3 == 0)
+                    {
+                        //updateVolumePositionsManual();
+                        currentVolume *= 2;
+
+                        //Print("counterloss = " + counterLoss);
+                    }
                 }
             }
         }
         protected void trailAllPositions()
         {
-
             foreach (var position in Positions)
             {
-
                 //if position is a buy
                 if (position.TradeType == TradeType.Buy)
                 {
@@ -159,12 +172,10 @@ namespace cAlgo
                     {
                         var newStopLossPrice = Math.Round(position.EntryPrice + TrailingStop * Symbol.PipSize, Symbol.Digits);
                         ModifyPosition(position, newStopLossPrice, position.TakeProfit);
-
                     }
                 }
                 if (position.TradeType == TradeType.Sell)
                 {
-
                     //check the actual gain/loss
                     double distance = position.EntryPrice - Symbol.Ask;
                     // Print("distance" + distance);
@@ -176,7 +187,6 @@ namespace cAlgo
                         ModifyPosition(position, newStopLossPrice, position.TakeProfit);
                     }
                 }
-
             }
         }
         protected void updateVolumePositionsManual()
